@@ -105,7 +105,6 @@ def run_experiment(args, worker, dest_dir, smac_deterministic, store_all_runs=Fa
         result = opt.run(n_iterations=args.num_iterations, min_n_workers=args.n_workers)
 
         print("Finished optimization")
-
         # shutdown the worker and the dispatcher
         opt.shutdown(shutdown_workers=True)
         NS.shutdown()
