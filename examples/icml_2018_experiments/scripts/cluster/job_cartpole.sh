@@ -2,7 +2,7 @@
 #SBATCH -p cpu_ivy # partition (queue)
 #SBATCH --mem 4000 # memory pool for all cores (4GB)
 #SBATCH -t 2-10:00 # time (D-HH:MM)
-#SBATCH -c 6 # number of cores
+#SBATCH -c 4 # number of cores
 #SBATCH -o log/%x.%N.%j.out # STDOUT  (the folder log has to be created prior to running or this won't work)
 #SBATCH -e log/%x.%N.%j.err # STDERR  (the folder log has to be created prior to running or this won't work)
 #SBATCH -J cartpole # sets the job name. If not specified, the file name will be used as job name

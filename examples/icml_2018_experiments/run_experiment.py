@@ -21,7 +21,7 @@ def standard_parser_args(parser):
     parser.add_argument('--max_budget', type=float, help='Maximum budget for all methods.')
     parser.add_argument('--eta', type=float, help='Eta value for Hyperband/BOHB.', default=3)
     # Network / cluster args for HpBandSter-methods
-    parser.add_argument('--n_workers', type=int, help='Number of workers to run in parallel.', default=4)
+    parser.add_argument('--n_workers', type=int, help='Number of workers to run in parallel.', default=1)
     parser.add_argument('--worker', help='Flag to turn this into a worker process', action='store_true')
     parser.add_argument('--nic_name', type=str, default='lo', help='name of the network interface used for communication. Note: default is only for local execution on *nix!')
     parser.add_argument('--run_id', type=str, default=0)
