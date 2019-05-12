@@ -74,6 +74,7 @@ def run_experiment(args, worker, dest_dir, smac_deterministic, store_all_runs=Fa
         print("1")
         # Every process has to lookup the hostname
         host = hpns.nic_name_to_host(args.nic_name)
+        print(host)
         print("2")
 
         # setup a nameserver
