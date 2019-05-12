@@ -1,5 +1,6 @@
 import os
 import pickle
+import argparse
 
 import numpy as np
 
@@ -14,7 +15,7 @@ def standard_parser_args(parser):
     parser.add_argument('--dest_dir', type=str, help='the destination directory. A new subfolder is created for each benchmark/dataset.', default='../results/')
     parser.add_argument('--num_iterations', type=int, help='number of Hyperband iterations performed.', default=4)
     parser.add_argument('--exp_name', type=str, default='bnn', help='Possible choices: bnn, cartpole, svm_surrogate, paramnet_surrogate')
-    parser.add_argument('--method', type=str, default='randomsearch', help='Possible choices: randomsearch, bohb, hyperband, tpe, smac')
+    parser.add_argument('--opt_method', type=str, default='randomsearch', help='Possible choices: randomsearch, bohb, hyperband, tpe, smac')
     parser.add_argument('--min_budget', type=float, help='Minimum budget for Hyperband and BOHB.')
     parser.add_argument('--max_budget', type=float, help='Maximum budget for all methods.')
     parser.add_argument('--eta', type=float, help='Eta value for Hyperband/BOHB.', default=3)
@@ -33,11 +34,11 @@ def standard_parser_args(parser):
 def get_optimizer(parsed_args, config_space, **kwargs):
     eta = parsed_args.eta
     opt = None
-    if parsed_args.method == 'randomsearch':
+    if parsed_args.opt_method == 'randomsearch':
         opt = RandomSearch
-    if parsed_args.method == 'bohb':
+    if parsed_args.opt_method == 'bohb':
         opt = BOHB
-    if parsed_args.method == 'hyperband':
+    if parsed_args.opt_method == 'hyperband':
         opt = HyperBand
     if opt is None:
         raise ValueError("Unknown method %s"%parsed_args.method)
@@ -67,7 +68,7 @@ def run_experiment(args, worker, dest_dir, smac_deterministic, store_all_runs=Fa
     os.makedirs(args.working_directory, exist_ok=True)
     os.makedirs(dest_dir, exist_ok=True)
 
-    if args.method in ['randomsearch', 'bohb', 'hyperband']:
+    if args.opt_method in ['randomsearch', 'bohb', 'hyperband']:
         # Every process has to lookup the hostname
         host = hpns.nic_name_to_host(args.nic_name)
 
@@ -117,13 +118,22 @@ def run_experiment(args, worker, dest_dir, smac_deterministic, store_all_runs=Fa
     # the number of iterations for the blackbox optimizers must be increased so they have comparable total budgets
     bb_iterations = int(args.num_iterations * (1+(np.log(args.max_budget) - np.log(args.min_budget))/np.log(args.eta)))
 
-    if args.method == 'tpe':
+    if args.opt_method == 'tpe':
         result = worker.run_tpe(bb_iterations)
 
-    if args.method == 'smac':
+    if args.opt_method == 'smac':
         result = worker.run_smac(bb_iterations, deterministic=smac_deterministic)
 
     if result is None:
         raise ValueError("Unknown method %s!"%args.method)
 
     return result
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Running one of the icml 2018 experiments.', conflict_handler='resolve')
+    parser = standard_parser_args(parser)
+
+    args = parser.parse_args()
+
+    run_experiment(args, args.worker, args.dest_dir, smac_deterministic=True, store_all_runs=False)
