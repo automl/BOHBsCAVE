@@ -19,9 +19,9 @@ source ~/BOHBsCAVE/.ve_BOHBsCAVE/bin/activate;
 
 # Job to perform
 if [ $SLURM_ARRAY_TASK_ID -eq 1 ]
-   then python run_experiment.py --exp_name cartpole --run_id 43 --nic_name eth0 --opt_method bohb --dest_dir opt_results/cartpole/bohb --max_budget 9 --min_budget 1
+   then python run_experiment.py --exp_name cartpole --run_id 43 --nic_name eth0 --opt_method bohb --dest_dir opt_results/cartpole/bohb --max_budget 9 --min_budget 1 --n_workers 4
 else
-   python run_experiment.py --exp_name cartpole --run_id 43 --nic_name eth0 --worker --opt_method bohb --dest_dir opt_results/cartpole/bohb --max_budget 9 --min_budget 1
+   python run_experiment.py --exp_name cartpole --run_id 43 --nic_name eth0 --worker --opt_method bohb --dest_dir opt_results/cartpole/bohb --max_budget 9 --min_budget 1 --n_workers 4
 fi
 
 # Print some Information about the end-time to STDOUT

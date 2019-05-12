@@ -80,6 +80,7 @@ def run_experiment(args, worker, dest_dir, smac_deterministic, store_all_runs=Fa
         NS = hpns.NameServer(run_id=args.run_id, nic_name=args.nic_name, host=host, working_directory=args.working_directory)
         ns_host, ns_port = NS.start()
         print("3")
+        print(args.worker)
 
         if args.worker:
             print("WORKER")
