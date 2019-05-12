@@ -12,7 +12,7 @@ from workers.bnn_worker import BNNWorker
 from workers.cartpole_worker import CartpoleReducedWorker as CartpoleWorker
 
 def standard_parser_args(parser):
-    parser.add_argument('--exp_name', type=str, help='Possible choices: bnn, cartpole, svm_surrogate, paramnet_surrogate')
+    parser.add_argument('--exp_name', type=str, required=True, help='Possible choices: bnn, cartpole, svm_surrogate, paramnet_surrogate')
     parser.add_argument('--opt_method', type=str, default='bohb', help='Possible choices: randomsearch, bohb, hyperband, tpe, smac')
 
     parser.add_argument('--dest_dir', type=str, help='the destination directory. A new subfolder is created for each benchmark/dataset.', default='opt_results')
@@ -83,6 +83,8 @@ def run_experiment(args, worker, dest_dir, smac_deterministic, store_all_runs=Fa
             worker.load_nameserver_credentials(working_directory=args.working_directory)
             worker.run(background=False)
             exit(0)
+
+        worker = get_worker(args, host=host)
 
         # start worker in the background
         worker.load_nameserver_credentials(args.working_directory)
