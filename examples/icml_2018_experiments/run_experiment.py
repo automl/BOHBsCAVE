@@ -11,10 +11,11 @@ from workers.bnn_worker import BNNWorker
 from workers.cartpole_worker import CartpoleReducedWorker as CartpoleWorker
 
 def standard_parser_args(parser):
-    parser.add_argument('--dest_dir', type=str, help='the destination directory. A new subfolder is created for each benchmark/dataset.', default='../results/')
+    parser.add_argument('--exp_name', type=str, help='Possible choices: bnn, cartpole, svm_surrogate, paramnet_surrogate')
+    parser.add_argument('--method', type=str, default='bohb', help='Possible choices: randomsearch, bohb, hyperband, tpe, smac')
+
+    parser.add_argument('--dest_dir', type=str, help='the destination directory. A new subfolder is created for each benchmark/dataset.', default='opt_results')
     parser.add_argument('--num_iterations', type=int, help='number of Hyperband iterations performed.', default=4)
-    parser.add_argument('--exp_name', type=str, default='bnn', help='Possible choices: bnn, cartpole, svm_surrogate, paramnet_surrogate')
-    parser.add_argument('--method', type=str, default='randomsearch', help='Possible choices: randomsearch, bohb, hyperband, tpe, smac')
     parser.add_argument('--min_budget', type=float, help='Minimum budget for Hyperband and BOHB.')
     parser.add_argument('--max_budget', type=float, help='Maximum budget for all methods.')
     parser.add_argument('--eta', type=float, help='Eta value for Hyperband/BOHB.', default=3)
