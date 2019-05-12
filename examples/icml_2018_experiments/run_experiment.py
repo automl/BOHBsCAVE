@@ -64,32 +64,42 @@ def get_worker(args, host=None):
     return worker
 
 def run_experiment(args, worker, dest_dir, smac_deterministic, store_all_runs=False):
+    print("Running experiment (args: %s)" % str(args))
     # make sure the working and dest directory exist
     os.makedirs(args.working_directory, exist_ok=True)
     os.makedirs(dest_dir, exist_ok=True)
 
     if args.opt_method in ['randomsearch', 'bohb', 'hyperband']:
+        print("1")
         # Every process has to lookup the hostname
         host = hpns.nic_name_to_host(args.nic_name)
+        print("2")
 
         # setup a nameserver
         NS = hpns.NameServer(run_id=args.run_id, nic_name=args.nic_name, host=host, working_directory=args.working_directory)
         ns_host, ns_port = NS.start()
+        print("3")
 
         if args.worker:
+            print("WORKER")
             time.sleep(5)    # short artificial delay to make sure the nameserver is already running
             worker = get_worker(args, host=host)
             worker.load_nameserver_credentials(working_directory=args.working_directory)
             worker.run(background=False)
             exit(0)
 
+        print("4")
+
         # start worker in the background
-        worker.load_nameserver_credentials(args.working_directory)
+        worker.load_nameserver_credentials(working_directory=args.working_directory)
         worker.run(background=True)
 
+        print("5")
         configspace = worker.configspace
 
         result_logger = hpres.json_result_logger(directory=dest_dir, overwrite=True)
+
+        print("Getting optimizer...")
 
         opt = get_optimizer(args, configspace, working_directory=args.dest_dir,
                             run_id = args.run_id,
