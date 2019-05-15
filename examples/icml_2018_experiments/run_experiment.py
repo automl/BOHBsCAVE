@@ -10,9 +10,11 @@ import hpbandster.core.result as hpres
 
 from workers.bnn_worker import BNNWorker
 from workers.cartpole_worker import CartpoleReducedWorker as CartpoleWorker
+from workers.paramnet_surrogates import ParamNetSurrogateWorker
+from workers.svm_surrogate import SVMSurrogateWorker
 
 def standard_parser_args(parser):
-    parser.add_argument('--exp_name', type=str, required=True, help='Possible choices: bnn, cartpole, svm_surrogate, paramnet_surrogate')
+    parser.add_argument('--exp_name', type=str, required=True, help='Possible choices: bnn, cartpole, svm_surrogate, paramnet_surrogates')
     parser.add_argument('--opt_method', type=str, default='bohb', help='Possible choices: randomsearch, bohb, hyperband, tpe, smac')
 
     parser.add_argument('--dest_dir', type=str, help='the destination directory. A new subfolder is created for each benchmark/dataset.', default='opt_results')
@@ -58,10 +60,12 @@ def get_worker(args, host=None):
         worker = CartpoleWorker(measure_test_loss=False, run_id=args.run_id, host=host)
     elif exp_name == 'svm_surrogate':
         # this is a synthetic benchmark, so we will use the run_id to separate the independent runs JM: what's that supposed to mean?
-        worker = Worker(surrogate_path=args.surrogate_path, measure_test_loss=True, run_id=args.run_id, host=host)
+        worker = SVMSurrogateWorker(surrogate_path=args.surrogate_path, measure_test_loss=True, run_id=args.run_id, host=host)
     elif exp_name == 'paramnet_surrogates':
-        worker = Worker(dataset=args.dataset_paramnet_surrogates, surrogate_path=args.surrogate_path,
-                        measure_test_loss=False, run_id=args.run_id, host=host)
+        if not args.dataset_paramnet_surrogates:
+            raise ValueError("Specify a dataset for paramnet surrogates experiment!")
+        worker = ParamNetSurrogateWorker(dataset=args.dataset_paramnet_surrogates, surrogate_path=args.surrogate_path,
+                                         measure_test_loss=False, run_id=args.run_id, host=host)
     else:
         raise ValueError("{} not a valid experiment name".format(exp_name))
     return worker
@@ -81,7 +85,8 @@ def run_experiment(args, worker, dest_dir, smac_deterministic, store_all_runs=Fa
 
         # setup a nameserver
         NS = hpns.NameServer(run_id=args.run_id,
-                             #nic_name=args.nic_name,
+                             nic_name=args.nic_name,
+                             port=0,
                              host=host, working_directory=args.working_directory)
         ns_host, ns_port = NS.start()
         print("3")
@@ -104,6 +109,9 @@ def run_experiment(args, worker, dest_dir, smac_deterministic, store_all_runs=Fa
         worker.load_nameserver_credentials(working_directory=args.working_directory)
         #worker.run(background=True)
 
+        if args.exp_name == 'paramnet_surrogates':
+            args.min_budget, args.max_budget = worker.budgets[args.dataset_paramnet_surrogates]
+
         print("5")
         configspace = worker.configspace
 
@@ -111,7 +119,7 @@ def run_experiment(args, worker, dest_dir, smac_deterministic, store_all_runs=Fa
 
         print("Getting optimizer...")
 
-        opt = get_optimizer(args, configspace, working_directory=args.dest_dir,
+        opt = get_optimizer(args, configspace, working_directory=args.working_directory,
                             run_id=args.run_id,
                             min_budget=args.min_budget, max_budget=args.max_budget,
                             host=host,
@@ -156,5 +164,11 @@ if __name__ == "__main__":
     parser = standard_parser_args(parser)
 
     args = parser.parse_args()
+    args.dest_dir = os.path.join(args.dest_dir, args.exp_name)
+    if args.exp_name == 'bnn':
+        args.dest_dir = os.path.join(args.dest_dir, args.dataset_bnn)
+    if args.exp_name == 'paramnet_surrogates':
+        args.dest_dir = os.path.join(args.dest_dir, args.dataset_paramnet_surrogates)
+    args.dest_dir = os.path.join(args.dest_dir, args.opt_method)
 
     run_experiment(args, args.worker, args.dest_dir, smac_deterministic=True, store_all_runs=False)
