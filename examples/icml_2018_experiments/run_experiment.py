@@ -29,7 +29,7 @@ def standard_parser_args(parser):
             action='store_false')
     parser.add_argument('--nic_name', type=str, default='lo', help='name of the network interface used for communication. Note: default is only for local execution on *nix!')
     parser.add_argument('--run_id', type=str, default=0)
-    parser.add_argument('--working_directory', type=str, help='Directory holding live rundata. Should be shared across all nodes for parallel optimization.', default='/tmp/')
+    parser.add_argument('--working_directory', type=str, help='Directory holding live rundata. Should be shared across all nodes for parallel optimization.', default='./tmp/')
     # Only relevant for some experiments
     parser.add_argument('--dataset_bnn', type=str, help='Only for bnn. Choose from toyfunction, bostonhousing, proteinstructure.', default=None)
     parser.add_argument('--dataset_paramnet_surrogates', choices=['adult', 'higgs', 'letter', 'mnist', 'optdigits', 'poker'], help="name of the dataset used", default='mnist')
@@ -84,16 +84,22 @@ def run_experiment(args, worker, dest_dir, smac_deterministic, store_all_runs=Fa
         print("2")
 
         # setup a nameserver
-        NS = hpns.NameServer(run_id=args.run_id, nic_name=args.nic_name, host=host, working_directory=args.working_directory)
+        NS = hpns.NameServer(run_id=args.run_id,
+                             nic_name=args.nic_name,
+                             port=0,
+                             host=host, working_directory=args.working_directory)
         ns_host, ns_port = NS.start()
         print("3")
+        print(args.worker)
 
         if args.worker:
             print("WORKER")
-            time.sleep(5)    # short artificial delay to make sure the nameserver is already running
+            #time.sleep(5)    # short artificial delay to make sure the nameserver is already running
+            print("WAKE UP")
             worker = get_worker(args, host=host)
             worker.load_nameserver_credentials(working_directory=args.working_directory)
             worker.run(background=False)
+            print("EXIT")
             exit(0)
 
         print("4")
@@ -101,7 +107,7 @@ def run_experiment(args, worker, dest_dir, smac_deterministic, store_all_runs=Fa
 
         # start worker in the background
         worker.load_nameserver_credentials(working_directory=args.working_directory)
-        worker.run(background=True)
+        #worker.run(background=True)
 
         if args.exp_name == 'paramnet_surrogates':
             args.min_budget, args.max_budget = worker.budgets[args.dataset_paramnet_surrogates]
@@ -114,12 +120,12 @@ def run_experiment(args, worker, dest_dir, smac_deterministic, store_all_runs=Fa
         print("Getting optimizer...")
 
         opt = get_optimizer(args, configspace, working_directory=args.working_directory,
-                            run_id = args.run_id,
+                            run_id=args.run_id,
                             min_budget=args.min_budget, max_budget=args.max_budget,
-                            host=ns_host,
+                            host=host,
                             nameserver=ns_host,
                             nameserver_port = ns_port,
-                            ping_interval=3600,
+                            ping_interval=30,
                             result_logger=result_logger,
                            )
 
@@ -153,6 +159,7 @@ def run_experiment(args, worker, dest_dir, smac_deterministic, store_all_runs=Fa
 
 
 if __name__ == "__main__":
+    print("WHAT?!")
     parser = argparse.ArgumentParser(description='Running one of the icml 2018 experiments.', conflict_handler='resolve')
     parser = standard_parser_args(parser)
 
