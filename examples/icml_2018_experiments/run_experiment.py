@@ -87,7 +87,8 @@ def run_experiment(args, worker, dest_dir, smac_deterministic, store_all_runs=Fa
         NS = hpns.NameServer(run_id=args.run_id,
                              nic_name=args.nic_name,
                              port=0,
-                             host=host, working_directory=args.working_directory)
+                             host=host,
+                             working_directory=args.working_directory)
         ns_host, ns_port = NS.start()
         print("3")
         print(args.worker)
@@ -107,7 +108,7 @@ def run_experiment(args, worker, dest_dir, smac_deterministic, store_all_runs=Fa
 
         # start worker in the background
         worker.load_nameserver_credentials(working_directory=args.working_directory)
-        #worker.run(background=True)
+        worker.run(background=True)
 
         if args.exp_name == 'paramnet_surrogates':
             args.min_budget, args.max_budget = worker.budgets[args.dataset_paramnet_surrogates]
@@ -130,6 +131,10 @@ def run_experiment(args, worker, dest_dir, smac_deterministic, store_all_runs=Fa
                            )
 
         print("Initialization successful, starting optimization")
+
+        from ConfigSpace.read_and_write import pcs_new
+        with open(os.path.join(dest_dir, 'configspace.pcs'), 'w') as fh:
+            fh.write(pcs_new.write(opt.config_generator.configspace))
 
         result = opt.run(n_iterations=args.num_iterations, min_n_workers=args.n_workers)
 

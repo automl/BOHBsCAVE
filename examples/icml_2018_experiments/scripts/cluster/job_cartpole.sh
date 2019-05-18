@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH -p cpu_ivy # partition (queue)
+#SBATCH -p ml_cpu-ivy # partition (queue)
 #SBATCH --mem 4000 # memory pool for all cores (4GB)
-#SBATCH -t 2-10:00 # time (D-HH:MM)
+#SBATCH -t 1-10:00 # time (D-HH:MM)
 #SBATCH -c 4 # number of cores
 #SBATCH -o log/%x.%N.%j.out # STDOUT  (the folder log has to be created prior to running or this won't work)
 #SBATCH -e log/%x.%N.%j.err # STDERR  (the folder log has to be created prior to running or this won't work)
@@ -20,9 +20,9 @@ source ~/BOHBsCAVE/.ve_BOHBsCAVE/bin/activate;
 # Job to perform
 if [ $SLURM_ARRAY_TASK_ID -eq 0 ]
 then
-   python run_experiment.py --exp_name cartpole --run_id 43 --nic_name eth0 --no_worker --opt_method bohb --dest_dir opt_results/cartpole/bohb --max_budget 9 --min_budget 1 --n_workers 3
+   python run_experiment.py --exp_name cartpole --run_id 43 --nic_name eth0 --no_worker --opt_method bohb --dest_dir opt_results/cartpole/bohb --max_budget 9 --min_budget 1 --n_workers 4
 else
-   python run_experiment.py --exp_name cartpole --run_id 43 --nic_name eth0 --worker --opt_method bohb --dest_dir opt_results/cartpole/bohb --max_budget 9 --min_budget 1 --n_workers 3
+   python run_experiment.py --exp_name cartpole --run_id 43 --nic_name eth0 --worker --opt_method bohb --dest_dir opt_results/cartpole/bohb --max_budget 9 --min_budget 1 --n_workers 4
 fi
 
 # Print some Information about the end-time to STDOUT
