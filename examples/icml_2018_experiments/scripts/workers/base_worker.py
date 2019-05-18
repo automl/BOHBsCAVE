@@ -125,7 +125,7 @@ class BaseWorker(HPOlib2Worker):
 
             return loss, []
 
-        scenario = Scenario({    "run_obj": "quality",
+        scenario = Scenario({   "run_obj": "quality",
                                 "runcount-limit": num_iterations,
                                 "cs": self.configspace,
                                 "deterministic": deterministic,

@@ -1,6 +1,10 @@
+# This script will run any of the experiments described in HpBandSter's icml_2018_experiments
+# Use the script with the --help flag to receive info on usage.
+
 import os
 import pickle
 import argparse
+import copy
 
 import numpy as np
 
@@ -15,7 +19,7 @@ from workers.svm_surrogate import SVMSurrogateWorker
 
 def standard_parser_args(parser):
     parser.add_argument('--exp_name', type=str, required=True, help='Possible choices: bnn, cartpole, svm_surrogate, paramnet_surrogates')
-    parser.add_argument('--opt_method', type=str, default='bohb', help='Possible choices: randomsearch, bohb, hyperband, tpe, smac')
+    parser.add_argument('--opt_method', type=str, default='bohb', help='Possible choices: randomsearch, bohb, hyperband, smac')
 
     parser.add_argument('--dest_dir', type=str, help='the destination directory. A new subfolder is created for each benchmark/dataset.',
                         default='../opt_results')
@@ -148,14 +152,21 @@ def run_experiment(args, worker, dest_dir, smac_deterministic, store_all_runs=Fa
         opt.shutdown(shutdown_workers=True)
         NS.shutdown()
 
+    if args.exp_name == 'paramnet_surrogates':
+        # This if block is necessary to set budgets for paramnet_surrogates - for nothing else
+        args_tmp = copy.deepcopy(args)
+        args_tmp.opt_method = 'bohb'
+        worker = get_worker(args_tmp)
+        args.min_budget, args.max_budget = worker.budgets[args.dataset_paramnet_surrogates]
+
     # the number of iterations for the blackbox optimizers must be increased so they have comparable total budgets
     bb_iterations = int(args.num_iterations * (1+(np.log(args.max_budget) - np.log(args.min_budget))/np.log(args.eta)))
 
-    if args.opt_method == 'tpe':
-        result = worker.run_tpe(bb_iterations)
+    #if args.opt_method == 'tpe':
+    #    result = worker.run_tpe(bb_iterations)
 
     if args.opt_method == 'smac':
-        result = worker.run_smac(bb_iterations, deterministic=smac_deterministic)
+        result = worker.run_smac(bb_iterations, deterministic=smac_deterministic, working_directory=args.dest_dir)
 
     if result is None:
         raise ValueError("Unknown method %s!"%args.method)
