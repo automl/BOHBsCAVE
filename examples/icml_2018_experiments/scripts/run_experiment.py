@@ -17,7 +17,8 @@ def standard_parser_args(parser):
     parser.add_argument('--exp_name', type=str, required=True, help='Possible choices: bnn, cartpole, svm_surrogate, paramnet_surrogates')
     parser.add_argument('--opt_method', type=str, default='bohb', help='Possible choices: randomsearch, bohb, hyperband, tpe, smac')
 
-    parser.add_argument('--dest_dir', type=str, help='the destination directory. A new subfolder is created for each benchmark/dataset.', default='opt_results')
+    parser.add_argument('--dest_dir', type=str, help='the destination directory. A new subfolder is created for each benchmark/dataset.',
+                        default='../opt_results')
     parser.add_argument('--num_iterations', type=int, help='number of Hyperband iterations performed.', default=4)
     parser.add_argument('--min_budget', type=float, help='Minimum budget for Hyperband and BOHB.')
     parser.add_argument('--max_budget', type=float, help='Maximum budget for all methods.')
@@ -25,18 +26,23 @@ def standard_parser_args(parser):
     # Network / cluster args for HpBandSter-methods
     parser.add_argument('--n_workers', type=int, help='Number of workers to run in parallel.', default=1)
     parser.add_argument('--worker', help='Flag to turn this into a worker process', action='store_true')
-    parser.add_argument('--no_worker', help='Flag to turn this into a worker process', dest='worker',
-            action='store_false')
+    parser.add_argument('--no_worker', help='Flag to turn this into a worker process',
+                        dest='worker', action='store_false')
     parser.add_argument('--nic_name', type=str, default='lo', help='name of the network interface used for communication. Note: default is only for local execution on *nix!')
     parser.add_argument('--run_id', type=str, default=0)
-    parser.add_argument('--working_directory', type=str, help='Directory holding live rundata. Should be shared across all nodes for parallel optimization.', default='./tmp/')
+    parser.add_argument('--working_directory', type=str, help='Directory holding live rundata. Should be shared across all nodes for parallel optimization.',
+                        default='./tmp/')
     # Only relevant for some experiments
-    parser.add_argument('--dataset_bnn', type=str, help='Only for bnn. Choose from toyfunction, bostonhousing, proteinstructure.', default=None)
-    parser.add_argument('--dataset_paramnet_surrogates', choices=['adult', 'higgs', 'letter', 'mnist', 'optdigits', 'poker'], help="name of the dataset used", default='mnist')
-    parser.add_argument('--surrogate_path', type=str, help='Path to the pickled surrogate models. If None, HPOlib2 will automatically download the surrogates to the .hpolib directory in your home directory.', default=None)
+    parser.add_argument('--dataset_bnn', choices=['toyfunction', 'bostonhousing', 'proteinstructure'], help='Only for bnn. ', default=None)
+    parser.add_argument('--dataset_paramnet_surrogates', choices=['adult', 'higgs', 'letter', 'mnist', 'optdigits', 'poker'],
+                        help="Only for paramnet_surrogates. ", default=None)
+    parser.add_argument('--surrogate_path', type=str, help="Path to the pickled surrogate models. If None, HPOlib2 "
+                                                           "will automatically download the surrogates to the .hpolib "
+                                                           "directory in your home directory.", default=None)
     return parser
 
 def get_optimizer(parsed_args, config_space, **kwargs):
+    """ Get the right hpbandster-optimizer """
     eta = parsed_args.eta
     opt = None
     if parsed_args.opt_method == 'randomsearch':
@@ -46,7 +52,7 @@ def get_optimizer(parsed_args, config_space, **kwargs):
     if parsed_args.opt_method == 'hyperband':
         opt = HyperBand
     if opt is None:
-        raise ValueError("Unknown method %s"%parsed_args.method)
+        raise ValueError("Unknown method %s" % parsed_args.method)
     return opt(config_space, eta=eta, **kwargs)
 
 def get_worker(args, host=None):
@@ -59,7 +65,7 @@ def get_worker(args, host=None):
     elif exp_name == 'cartpole':
         worker = CartpoleWorker(measure_test_loss=False, run_id=args.run_id, host=host)
     elif exp_name == 'svm_surrogate':
-        # this is a synthetic benchmark, so we will use the run_id to separate the independent runs JM: what's that supposed to mean?
+        # this is a synthetic benchmark, so we will use the run_id to separate the independent runs (JM: what's that supposed to mean?)
         worker = SVMSurrogateWorker(surrogate_path=args.surrogate_path, measure_test_loss=True, run_id=args.run_id, host=host)
     elif exp_name == 'paramnet_surrogates':
         if not args.dataset_paramnet_surrogates:
@@ -77,11 +83,10 @@ def run_experiment(args, worker, dest_dir, smac_deterministic, store_all_runs=Fa
     os.makedirs(dest_dir, exist_ok=True)
 
     if args.opt_method in ['randomsearch', 'bohb', 'hyperband']:
-        print("1")
+        print("Using hpbandster-optimizer (%s)" % args.opt_method)
         # Every process has to lookup the hostname
         host = hpns.nic_name_to_host(args.nic_name)
-        print(host)
-        print("2")
+        print("Host: %s" % str(host))
 
         # setup a nameserver
         NS = hpns.NameServer(run_id=args.run_id,
@@ -90,20 +95,17 @@ def run_experiment(args, worker, dest_dir, smac_deterministic, store_all_runs=Fa
                              host=host,
                              working_directory=args.working_directory)
         ns_host, ns_port = NS.start()
-        print("3")
-        print(args.worker)
+        print("Initialized nameserver (ns_host: %s; ns_port: %s)" % (str(ns_host), str(ns_port)))
 
         if args.worker:
-            print("WORKER")
-            #time.sleep(5)    # short artificial delay to make sure the nameserver is already running
-            print("WAKE UP")
+            print("This is a pure worker-thread.")
             worker = get_worker(args, host=host)
             worker.load_nameserver_credentials(working_directory=args.working_directory)
             worker.run(background=False)
-            print("EXIT")
+            print("Exiting...")
             exit(0)
 
-        print("4")
+        print("This is the name-server thread, however there will be a worker running in the background.")
         worker = get_worker(args, host=host)
 
         # start worker in the background
@@ -111,14 +113,17 @@ def run_experiment(args, worker, dest_dir, smac_deterministic, store_all_runs=Fa
         worker.run(background=True)
 
         if args.exp_name == 'paramnet_surrogates':
+            print("This is the paramnet_surrogates experiment, so any custom budgets will be replaced by the "
+                  "dataset-specific budgets.")
             args.min_budget, args.max_budget = worker.budgets[args.dataset_paramnet_surrogates]
 
-        print("5")
+        print("Background-worker is running, grabbing configspace from worker and initializing result_logger "
+              "(with dest_dir %s)" % dest_dir)
         configspace = worker.configspace
 
         result_logger = hpres.json_result_logger(directory=dest_dir, overwrite=True)
 
-        print("Getting optimizer...")
+        print("Getting optimizer.")
 
         opt = get_optimizer(args, configspace, working_directory=args.working_directory,
                             run_id=args.run_id,
@@ -130,7 +135,7 @@ def run_experiment(args, worker, dest_dir, smac_deterministic, store_all_runs=Fa
                             result_logger=result_logger,
                            )
 
-        print("Initialization successful, starting optimization")
+        print("Initialization successful, starting optimization.")
 
         from ConfigSpace.read_and_write import pcs_new
         with open(os.path.join(dest_dir, 'configspace.pcs'), 'w') as fh:
@@ -142,11 +147,6 @@ def run_experiment(args, worker, dest_dir, smac_deterministic, store_all_runs=Fa
         # shutdown the worker and the dispatcher
         opt.shutdown(shutdown_workers=True)
         NS.shutdown()
-
-
-        from ConfigSpace.read_and_write import pcs_new
-        with open(os.path.join(dest_dir, 'configspace.pcs'), 'w') as fh:
-            fh.write(pcs_new.write(opt.config_generator.configspace))
 
     # the number of iterations for the blackbox optimizers must be increased so they have comparable total budgets
     bb_iterations = int(args.num_iterations * (1+(np.log(args.max_budget) - np.log(args.min_budget))/np.log(args.eta)))
@@ -164,10 +164,10 @@ def run_experiment(args, worker, dest_dir, smac_deterministic, store_all_runs=Fa
 
 
 if __name__ == "__main__":
-    print("WHAT?!")
     parser = argparse.ArgumentParser(description='Running one of the icml 2018 experiments.', conflict_handler='resolve')
     parser = standard_parser_args(parser)
 
+    # Parsing args and creating sub-folders for experiments
     args = parser.parse_args()
     args.dest_dir = os.path.join(args.dest_dir, args.exp_name)
     if args.exp_name == 'bnn':
