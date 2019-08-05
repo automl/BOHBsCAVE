@@ -33,8 +33,8 @@ that the notebooks might run for a long time (several days) for some of the expe
 
 ## Requirements
 
-This is a Python3 package (developed under Python 3.6).  For convenience, we recommend to install Anaconda with a recent
-Python 3 (see also `setup.sh`). If you want to set up the package manually, you find requirements in the `requirements.txt` (or, for the ICML 2018 Experiments, in `examples/icml_2018_experiments/icml2018requirements.txt`).
+This is a Python3 package (developed under Python 3.6).  For convenience, we recommend you to install Anaconda with a recent
+Python 3 (see also `setup.sh`). If you want to set up the package manually, you will find all the requirements in `requirements.txt` (or, for the ICML 2018 Experiments, in `examples/icml_2018_experiments/icml2018requirements.txt`).
 
 ## About the tools
 
